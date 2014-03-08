@@ -119,8 +119,8 @@ class Admin_Sub_Module extends Admin_Controller
 			$table_st_exists_file	= Easy_Database_Manage::check_structure_exists_file($database_table);
 			
 			$data = array(
-				'redirect_url'				=> "admin/".$base_module."/".$name,
-				'class_prefix'				=> "admin_".$name,
+				'redirect_url'				=> "admin/".$base_module."/".$slug,
+				'class_prefix'				=> "admin_".$slug,
 				'module_name'				=> $name,
 				'module_slug'				=> $slug,
 				'base_module'				=> $base_module,
@@ -134,8 +134,6 @@ class Admin_Sub_Module extends Admin_Controller
 			
 			$base_module_path = "addons/".$data['module_position']."/modules/".strtolower($data['base_module']);
 			
-			
-			
 			if(file_exists($base_module_path))
 			{
 				$cate_routes				= $this->detail_modules_m->append_cate_routes($data['base_module'],$data['module_slug']);
@@ -144,7 +142,7 @@ class Admin_Sub_Module extends Admin_Controller
 				
 				if(file_exists($base_module_path.'/views/admin/'.$data['module_slug'])){
 					
-					$error_msg = "Sub Module Name ".$data['module_slug']." already exists ";
+					$error_msg = "Sub Module Name ".$data['module_name']." already exists ";
 					
 					$this->session->set_flashdata('error',$error_msg);
 					
@@ -196,15 +194,15 @@ class Admin_Sub_Module extends Admin_Controller
 					
 					file_put_contents($base_module_path.'/language/thai/permission_lang.php',$sub_module_permission_lang, FILE_APPEND);
 					
-					$sub_construct = $this->append_construct($base_module_path."/controllers/admin.php",$data['module_slug']);
+					$sub_construct = $this->append_construct($base_module_path."/controllers/admin.php",$data);
 					
 					file_put_contents($base_module_path."/controllers/admin.php",$sub_construct);
 					
-					$sub_section = $this->append_sub_section($base_module_path.'/details.php',$data['base_module'],$data['module_slug']);
+					$sub_section = $this->append_sub_section($base_module_path.'/details.php',$data);
 					
 					file_put_contents($base_module_path.'/details.php',$sub_section);
 					
-					$sub_install = $this->append_install($base_module_path.'/details.php',$data['module_slug'],$data['database_table']);
+					$sub_install = $this->append_install($base_module_path.'/details.php',$data);
 					
 					file_put_contents($base_module_path.'/details.php',$sub_install);
 					
@@ -263,63 +261,60 @@ class Admin_Sub_Module extends Admin_Controller
 		$views_admin_files		= fopen($base_module_path."/views/admin/".strtolower($data['module_slug'])."/index.php","w",0775);
 		fwrite($views_admin_files,$this->crud_view_m->admin_index_view("admin/".$data['base_module']."/".$data['module_slug'],$data['base_module'],$data['database_table']));
 	}
-
-	public function append_sub_section($filedetail = null,$module_name = null,$cate_title = null)
+	
+	public function append_sub_section($file_target = null,$data = array())
 	{
-		$lines = file($filedetail);
-		$sub_section_shortcut = $this->detail_modules_m->categories_detail($module_name,$cate_title);
-		$key = 	'sections' ;
-		$found = false;
-		$output = array();
-		foreach ($lines as $lineNumber => $line)
-		{
-  		 	if (strpos($line,$key) !== false) {
-	  			 $output[]= $line."\n".$sub_section_shortcut."\n";
-   		 	}else{
-    			 $output[] =$line;
-  	 	 	}
-		}
 		
-		return $output;
+		$data_append 	= $this->detail_modules_m->categories_detail($data['base_module'],$data['module_slug']);
+		
+		$position 		= 'sections';
+
+		return $this->_append_string($file_target,$data_append,$position);
 			
 	}
 	
-	public function append_install($filedetail = null,$module_name=null,$database_table){
-		$lines = file($filedetail);
-		$sub_module_install = $this->detail_modules_m->get_install_function_detail($module_name,$database_table);
-		$key = 	"\$this->install_tables(" ;
-		$found = false;
-		$output = array();
-		foreach ($lines as $lineNumber => $line)
-		{
-  		 	if (strpos($line,$key) !== false) {
-	  			 $output[]= $line."\n".$sub_module_install ."\n";
-   		 	}else{
-    			 $output[] =$line;
-  	 	 	}
-		}
+	public function append_install($file_target = null,$data = array())
+	{
+
+		$data_append 	= $this->detail_modules_m->get_install_function_detail($data['module_slug'],$data['database_table']);
 		
-		return $output;
+		$position 		= "\$this->install_tables(\$tables_".$data['base_module'].")";
+
+		return $this->_append_string($file_target,$data_append,$position);
 	}
 	
-	public function append_construct($filedetail = null,$name)
+	public function append_construct($file_target = null,$data = array())
 	{
-		$lines = file($filedetail);
-		$sub_module_contruct ="\$this->load->model('".$name."_m');
-		\$this->lang->load('".$name."');";
-		$key = 	"parent::__construct();" ;
-		$found = false;
-		$output = array();
+
+		$data_append 	= "\$this->load->model('".$data['module_slug']."_m');
+		\$this->lang->load('".$data['module_slug']."');";
+		
+		$position 		= "parent::__construct();";
+
+		return $this->_append_string($file_target,$data_append,$position);
+	}
+	 
+	private function _append_string($file_target,$data_append = "",$position = "")
+	{
+		$output 	= array();
+		
+		$lines 		= file($file_target);
+		
+		$key 		= $position;
+		
 		foreach ($lines as $lineNumber => $line)
 		{
   		 	if (strpos($line,$key) !== false) {
-	  			 $output[]= $line."\n".$sub_module_contruct ."\n";
+  		 		
+	  			 $output[]= $line."\n".$data_append ."\n";
+	  			 
    		 	}else{
-    			 $output[] =$line;
+   		 		
+    			 $output[] = $line;
+				 
   	 	 	}
 		}
 		
 		return $output;
 	}
-	 
 }

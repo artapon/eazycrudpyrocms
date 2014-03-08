@@ -8,19 +8,12 @@
  */
 
 
-class detail_modules_m extends MY_Model{
-	
-	protected $real_table = array();
+class detail_modules_m extends MY_Model
+{
 	protected $sql_array;
+	protected $real_table = array();
 	protected $field_type = array();
 	protected $constraint = array();
-	
-	public function __construct()
-	{
-		parent::__construct();
-		$this->load->library('easy_database_manage');
-	}
-	
 	
 	public function create_details($data = array(),$input = array())
 	{
@@ -95,20 +88,6 @@ class Module_".ucfirst($data['module_slug'])." extends Module {
 		return \"".$help."\";
 	}
 	
-	
-	public function  delete_data_in_folder(\$str)
-	{
-        if(is_file(\$str)){
-            return @unlink(\$str);
-        }
-        elseif(is_dir(\$str)){
-            \$scan = glob(rtrim(\$str,'/').'/*');
-            foreach(\$scan as \$index=>\$path){
-                \$this->delete_data_in_folder(\$path);
-            }
-            return @rmdir(\$str);
-        }
-    }
 	
 }";
 		

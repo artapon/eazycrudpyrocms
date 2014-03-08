@@ -17,8 +17,6 @@ class Crud_Admin_Model_M extends CI_Model{
 	protected $real_table;
 	
 	
-	
-
 	public function create_model($data = array())
 	{
 		
@@ -43,24 +41,14 @@ class Crud_Admin_Model_M extends CI_Model{
 				
 				$this->status_str = "\$this->db->where(\"status\",\$this->input->post('f_status'));";
 				
-			}elseif(strpos($row->Field,'file') !== false){
-				
-				$this->function_del_file_str ="
-					public function del_file(\$id) {
-					\$get_file = \$this -> db -> where('".Easy_Database_Manage::get_table_desc_first_row($data['database_table'])->Field."', \$id) -> get('".$this->real_table."') -> row();
-					@unlink('uploads/".$module_path."/' . \$get_file ->".$row->Field.");
-					return \$this -> db -> where('".Easy_Database_Manage::get_table_desc_first_row($data['database_table'])->Field."', \$id) -> update('".$this->real_table."', array('".$row->Field."' => null));
-			}
-				";
-				
 			}
 		}
 		
 		if($check_exist_file['has_file']=='has_file'){
 			
-			$this->update_str 		= $this->create_update_has_file($data);
-			$this->create_str 		= $this->create_create_function_has_file($data);
-			$this->delete_file_str 	= $this->create_delete_function_has_file($data);
+			$this->update_str 		= $this->_update_has_file($data);
+			$this->create_str 		= $this->_create_has_file($data);
+			$this->delete_str 		= $this->_delete_has_file($data);
 			
 		}else{
 			
@@ -84,8 +72,17 @@ class ".ucfirst($data['module_slug'])."_m extends MY_Model{
 		/* Add join condition here 
 		Ex \$this->db->select('".$this->real_table.".*,second_database.*');
 			\$this->db->join('second_database', 'second_database.id = ".$this->real_table.".ref_second_database_id');
-		*/
+		*/";
+		if($data['check_db_table_exists_file']['has_file'] == 'has_file')
+		{
+			$file_detail .= "
+		\$this->db->select('".$this->real_table.".*,files.filename');
+		\$this->db->join('files', 'files.id = ".$this->real_table.".".$data['check_db_table_exists_file']['Field']."','LEFT');
+			";
 			
+		}
+			
+		$file_detail .= "
 		return \$this->db->get('".$this->real_table."');
 	}	
 		
@@ -94,9 +91,19 @@ class ".ucfirst($data['module_slug'])."_m extends MY_Model{
 	{
 		if(\$this->input->post('f_keywords')){
 			// Add Like condition here
-			\$this->db->like(\"".Easy_Database_Manage::get_table_desc_seccond_row($data['database_table'])."\",\$this->input->post('f_keywords'));
+		\n";
+		if($data['check_db_table_exists_file']['has_file'] == 'has_file')
+		{
+			$file_detail .= "\$this->db->like(\"".$this->real_table.".".Easy_Database_Manage::get_table_desc_seccond_row($data['database_table'])."\",\$this->input->post('f_keywords'));\n";
+			
+		}else{
+			
+			$file_detail .= "\$this->db->like(\"".Easy_Database_Manage::get_table_desc_seccond_row($data['database_table'])."\",\$this->input->post('f_keywords'));\n";
+			
 		}
-		
+				
+		$file_detail .="
+		}
 		
 		if(\$this->input->post('f_status')){
 			
@@ -108,8 +115,20 @@ class ".ucfirst($data['module_slug'])."_m extends MY_Model{
 	}
 	
 	public function get_".$data['module_slug']."_by_id(\$id)
-	{		
-		return \$this->db->where('".Easy_Database_Manage::get_table_desc_first_row($data['database_table'])->Field."',\$id)->get('".$this->real_table."')->row();
+	{\n";
+		
+	if($data['check_db_table_exists_file']['has_file'] == 'has_file')
+	{
+		$file_detail .= "\$this->db->where('".$this->real_table.".".Easy_Database_Manage::get_table_desc_first_row($data['database_table'])->Field."',\$id);\n";
+		
+	}else{
+		
+		$file_detail .= "\$this->db->where('".Easy_Database_Manage::get_table_desc_first_row($data['database_table'])->Field."',\$id);\n";
+		
+	}
+	
+		
+	$file_detail .="return \$this->_join_table()->row();
 		
 	}
 	
@@ -165,7 +184,6 @@ class ".ucfirst($data['module_slug'])."_m extends MY_Model{
 	public function _delete_model($data = array())
 	{
 		
-		
 		$file_detail = "
 			public function delete_".$data['module_slug']."(\$id = null)
 			{
@@ -177,12 +195,18 @@ class ".ucfirst($data['module_slug'])."_m extends MY_Model{
 		
 	}
 	
-	public function create_delete_function_has_file($data = array())
+	public function _delete_has_file($data = array())
 	{
 		$file_detail = "
-			public function delete_".$data['module_slug']."(\$id=null)
+			public function delete_".$data['module_slug']."(\$id = null)
 			{
-				\$this->del_file(\$id);
+				\$file = \$this->db->where('".Easy_Database_Manage::get_table_desc_first_row($data['database_table'])->Field."', \$id)->get('".$this->real_table."')->row();
+		
+				if(!empty(\$file))
+				{
+					Files::delete_file(\$file->".$data['check_db_table_exists_file']['Field'].");
+				}
+		
 				return \$this->db->where('".Easy_Database_Manage::get_table_desc_first_row($data['database_table'])->Field."', \$id)->delete('".$this->real_table."');
 			}
 		";
@@ -247,7 +271,7 @@ class ".ucfirst($data['module_slug'])."_m extends MY_Model{
 					
 				if(strpos($row->Field,'file') !== false){
 					
-					$create_update_input_str.= "'".$row->Field."'=>\$file['file_name'] . \$file['file_ext'],\n";
+					$create_update_input_str.= "'".$row->Field."'=>\$result['data']['id'],\n";
 					
 				}elseif($row->Field == 'created_on'){
 					
@@ -276,30 +300,39 @@ class ".ucfirst($data['module_slug'])."_m extends MY_Model{
 		return $create_update_input_str;
 	}
 	
-	public function create_create_function_has_file($data = array()){
+	private function _create_has_file($data = array())
+	{
 		
 		$get_input  = substr($this->_get_input($data['database_table'],'create'),0,-1);
 		
 		$file_detail ="
-		public function create_".$data['module_slug']."(\$input = array(),\$file = array())
+		public function create_".$data['module_slug']."(\$input = array(),\$result = array())
 		{
 		
 		 \$this->db->insert('".$this->real_table."',array(\n".
-							$get_input."
+									$get_input."
 							
 		));
 		
-		return \$this->db->insert_id();
-	}";
+			return \$this->db->insert_id();\n
+			
+		}
+		
+		public function get_folder_id()
+		{
+			return \$this->db->where('slug','".$data['module_slug']."-files')->get('file_folders')->row();
+		
+		}
+	";
 	return $file_detail;
 	}
 
-	public function create_update_has_file($data = array())
+	private function _update_has_file($data = array())
 	{
 		$get_input  = substr($this->_get_input($data['database_table'],'update'),0,-1);
 		
 		$file_detail = "
-		public function update_".$data['module_name']."(\$id = null,\$input = null,\$file = array())
+		public function update_".$data['module_name']."(\$id = null,\$input = null,\$result = array())
 		{
 			
 			return \$this->db->where('".Easy_Database_Manage::get_table_desc_first_row($data['database_table'])->Field."',\$id)->update('".$this->real_table."',array(\n".

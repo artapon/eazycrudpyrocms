@@ -333,7 +333,7 @@ $str_button = "<td>\n
 
 			}elseif(strpos($row->Field,'file') !== false){
 				
-				$str_table .= "<td class=\"collapse\"  ><img width=\"100\" height=\"100\" src=\"<?php echo base_url();?>uploads/".$file_path."/<?php echo \$row->".$row->Field."; ?>\" /></td>\n";
+				$str_table .= "<td class=\"collapse\"  ><img width=\"100\" height=\"100\" src=\"<?php echo base_url();?>uploads/default/files/<?php echo \$row->filename;?>\" /></td>\n";
 				
 			}elseif($row->Field == 'created_on' || $row->Field == 'date_pk'){
 				

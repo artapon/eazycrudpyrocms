@@ -102,19 +102,17 @@ class Crud_Field_Type
 	public static function field_type_file_upload($module_name,$field,$null = 'NO')
 	{
 		$str_html = "
-				<input type=\"hidden\" name=\"delete_file\" value=\"0\" />
-				<li <?php if(empty(\$".$module_name."->".$field.")){ ?> style=\"display:none\" <?php } ?> >
-					 <div class=\"input\">
-						<label for=\"image\"><?php echo lang('".$module_name.".file_label'); ?>  :</label>
-						<?php if(!empty(\$".$module_name."->".$field.")){ ?>
-						<img src=\"<?php echo base_url();?>uploads/".$module_path."/<?php echo (\$".$module_name."->".$field."?\$".$module_name."->".$field.":''); ?>\" style=\"max-height:200px; max-width:200px;\"  /> 
-						<input type=\"checkbox\" name=\"delete_file\" value=\"1\" onclick=\"checkchkdata('1')\" /><?php echo lang('".$module_name.".change_file_label'); ?><?php } ?>
+				<li>
+					<label for=\"".$field."\"><?php echo lang('".$module_name.".".$field."_label'); ?></label>
+					<?php if(!empty(\$".$module_name."->".$field.")):?>
+						<img width=\"200\" height=\"200\"  src=\"<?php echo base_url();?>uploads/default/files/<?php echo \$".$module_name."->filename;?>\" />
+						<input name=\"".$field."_id\" type=\"hidden\" value=\"<?php echo \$".$module_name."->".$field.";?>\" />
+					<?php endif;?>
+					<div class=\"input\">
+						<input type=\"file\" name=\"".$field."\" />
 					</div>
-				</li>
-				<li id=\"upload_img\" <?php if(!empty(\$".$module_name."->".$field.")){ ?> style=\"display:none;\" <?php } ?>>
-                 	<label for=\"nothing\"><?php echo lang('".$module_name.".file_label'); ?> </label>
-                  	<div class=\"input\"><?php echo form_upload('".$module_name."_file');?></div>
-                </li>";
+
+				</li>";
 		
 		return $str_html;
 	}
